@@ -1,426 +1,63 @@
-
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Calendar Booking System</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendar Booking System</title>
 
-        <!-- JQuery & JQuery UI  -->
-        <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
-        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-        <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.js" integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                margin: 20px;
-                padding: 0;
-                background-color: #f4f4f9;
-            }
-
-            label {
-                margin-right: 10px;
-            }
-
-            select, button {
-                margin-right: 20px;
-                padding: 5px 10px;
-                border: 1px solid #ccc;
-                border-radius: 5px;
-            }
-
-            #slotsContainer {
-                margin-top: 20px;
-                display: flex;
-                flex-wrap: wrap;
-            }
-
-            .slot {
-                padding: 10px;
-                margin: 5px;
-                background-color: #e2e2e2;
-                border-radius: 5px;
-                cursor: pointer;
-                user-select: none;
-            }
-
-            /* Overlay covering the entire screen */
-            #overlay {
-                position: fixed;
-                width: 100%;
-                height: 100%;
-                top: 0;
-                left: 0;
-                background-color: rgba(0,0,0,0.5);
-                z-index: 2;
-                display: none;
-                align-items: center;
-                justify-content: center;
-            }
-
-            /* Centered booking window */
-            #booking-window {
-
-                width: 50%;
-                max-width: 600px;
-                height: auto;
-                background-color: white;
-                padding: 20px;
-                padding-top: 30px;
-                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                border-radius: 8px;
-                position: relative;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-            }
-
-            /* Close button */
-            #close-btn {
-                margin-bottom: 10px;
-                position: absolute;
-                top: 10px;
-                right: 10px;
-                border: none;
-                background: none;
-                font-size: 24px;
-                cursor: pointer;
-            }
-
-            /* Input styling */
-            input, select {
-                box-sizing: border-box;
-                width: 100%;
-                padding: 10px;
-                margin-top: 5px;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-            }
-
-            /* Button styling */
-            button {
-                width: 100%;
-                padding: 10px;
-                background-color: #007BFF;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background-color 0.3s;
-            }
-
-            button:hover {
-                background-color: #0056b3;
-            }
-
-        </style>
-
-    </head>
-
-
-    <body>
-
-        <div id="overlay">
-            <div id="booking-window">
-                <div id="close-btn" onclick="closeOverlay()">×</div>
-
-                <input type="text" id="name" placeholder="Name">
-                <input type="email" id="email" placeholder="Email">
-                <input type="date" id="day" placeholder="Day"disabled>
-                <input type="text" id="duration" placeholder="Duration (e.g., 2 hours)"disabled>
-                <input type="time" id="start" placeholder="Start Time" disabled>
-                <input type="time" id="end" placeholder="End Time"disabled>
-                <select id="appointment-type">
-                    <option value="interview">Interview</option>
-                    <option value="introduction">Introduction</option>
-                    <option value="office hours">Office Hours</option>
-                </select>
-                <button onclick="submitBooking()">Submit</button>
-            </div>
-        </div>
-
-        <h1>Book a Meeting</h1>
-        <div>
-            <div>
-                <label for="datePicker">Select a Date:</label>
-                <input type="text" id="datePicker" readonly onchange="update_slots()">
-            
-                <label for="durationSelect">Duration:</label>
-                <select id="durationSelect" onchange="update_slots()">
-                    <option value="30">30 minutes</option>
-                    <option value="60">1 hour</option>
-                </select>
-            
-                <div id="error-notification"></div>
-            </div>
-            <div id="slotsContainer"></div>    
-        </div>
+    <link rel="stylesheet" href="style.css">
     
+</head>
+<body>
 
-        <script src="Utils.js"></script>
-        <script src="Day.js"></script>
-        <script src="TimeSlot.js"></script>
+    <div id="overlay">
+        <div id="booking-window">
+            <div id="close-btn" onclick="bookingSystem.closeOverlay()">×</div>
 
-        <script>
-            const cs = console.log
+            <input type="text" id="name" placeholder="Name" required title="Name is Required">
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="date" id="day" placeholder="Day"disabled>
+            <input type="text" id="duration" placeholder="Duration (e.g., 2 hours)"disabled>
+            <input type="time" id="start" placeholder="Start Time" disabled>
+            <input type="time" id="end" placeholder="End Time"disabled>
+            <select id="appointment-type">
+                <option value="interview">Interview</option>
+                <option value="introduction">Introduction</option>
+                <option value="office hours">Office Hours</option>
+            </select>
+            <button id="submit-button" onclick="bookingSystem.submitBooking()">Submit</button>
+        </div>
+    </div>
 
-            function submitBooking() {
-
-                let bookingDetails = {
-                    name: document.getElementById('name').value,
-                    email: document.getElementById('email').value,
-                    day: document.getElementById('day').value,
-                    duration: document.getElementById('duration').value,
-                    start: Utils.time_to_minutes(document.getElementById('start').value),
-                    end: Utils.time_to_minutes(document.getElementById('end').value),
-                    appointmentType: document.getElementById('appointment-type').value
-                };
-
-                if(!add_event(bookingDetails.day, bookingDetails.start, bookingDetails.end)){                            
-                    alert("Slot Unavailable")
-                }
-                closeOverlay();
-
-                update_slots()
-            }
-
-            function openOverLay(
-                day,
-                duration,
-                start,
-                end
-            ) {
-
-                document.getElementById("day").value = day.day
-                document.getElementById("duration").value = duration
-                document.getElementById("start").value = Utils.minutes_to_time(start)
-                document.getElementById("end").value = Utils.minutes_to_time(end)
-
-                document.getElementById('overlay').style.display = 'flex';
-            }
-            function closeOverlay() {
-                document.getElementById('overlay').style.display = 'none';
-            }
-
-
-            
-            const day_mapping = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
-
-            const HOUR_CONFIG = {
-                "daily" : {
-                    "start" : "05:00",
-                    "end"   : "23:00",
-                },
-                // "weekend" : {
-                //     "start" : "09:00",
-                //     "end"   : "23:00",
-                // },
-                // "Saturday" : {
-                //     "start" : "10:00",
-                //     "end"   : "11:00",
-                // },
-            }
-
-            const DATE_BASED_HOUR_CONFIG = {
-                "2024-04-22" : {
-                    "start" : "10:30",
-                    "end"   : "11:00",
-                }
-            }
-
-            const EVENT_TYPES = {
-                "fitness" : {
-                    "padding" : {
-                        "before" : 30,
-                        "after"  : 30,
-                    }
-                }
-            }
-
-
-
-            function get_appointments(){
-                let appointments = [];
-                    $.ajax({
-                    url: "ajax.php",
-                    type: "POST",
-                    data: { type: "get_appointments" },
-                    async: false,  // This makes the AJAX request synchronous
-                    success: function(data) {
-                        let parsed = JSON.parse(data)
-                        parsed.forEach(item => {
-                            appointments.push(new TimeSlot(new Day(item.day), item.start, item.end))
-                        });
-                    }
-                });
-                return appointments
-            }
-
-
-
-            function get_day_availability_range(
-                day
-            ){
-
-                let config = HOUR_CONFIG.daily;
-
-                if(HOUR_CONFIG.weekend && day.is_weekend){
-                    config = HOUR_CONFIG.weekend;
-                }
-                if(HOUR_CONFIG[day.dow]){
-                    config = HOUR_CONFIG[day.dow];                    
-                }
-                
-                if(DATE_BASED_HOUR_CONFIG[day.day]){
-                    config = DATE_BASED_HOUR_CONFIG[day.day];                    
-                }
-
-                return [
-                    Utils.time_to_minutes(config.start),
-                    Utils.time_to_minutes(config.end),                    
-                ];
-            }
-
-
-            $(document).ready(function() {
-
-                $("#datePicker").datepicker({
-                    dateFormat: "yy-mm-dd"
-                }).
-                datepicker("setDate", new Date());
-
-                update_slots()
-
-            });
-
-
-            function update_slots(){
-                cs("UPDAYING")
-                const dateText = $("#datePicker").val();
-                const duration = parseInt($("#durationSelect").val(), 10);
-                if (dateText) {
-                    displayAvailableSlots(new Day(dateText), duration);
-                } else {
-                    alert("Please select a date first.");
-                }
-            }
-
-
-
-            function displayAvailableSlots(
-                day,
-                duration
-            ){
-
-                appointments = get_appointments();
-
-
-                let error_notification = document.getElementById("error-notification")
-                error_notification.innerHTML = ""
+    <h1>Book a Meeting</h1>
+    <div>
+        <div>
+            <label for="datePicker">Select a Date:</label>
+            <input type="text" id="datePicker" readonly onchange="bookingSystem.updateSlots()">
         
-                // reset every time it loads
-                let slotContainer = document.getElementById("slotsContainer")
-                slotContainer.innerHTML = ""
-
-                let [start_time, end_time] = get_day_availability_range(day);
-
-                let time_available = false
-                while(start_time + duration < end_time){
-
-                    let start = start_time;
-                    let end = start_time + duration;
-
-                    if(slot_available(new TimeSlot(day, start, end))){
-
-                        time_available = true
-
-                        const slotDiv = document.createElement('div');
-                        slotDiv.className = 'slot';
-                        let display_start = Utils.minutes_to_time(start)
-                        let display_end = Utils.minutes_to_time(end)
-                        slotDiv.textContent = `${display_start} - ${display_end}`;
-
-
-                        slotDiv.onclick = function (){
-                            openOverLay(day, duration, start, end)
-                        }
-                        slotsContainer.appendChild(slotDiv);
-                    }
-
-                    start_time += duration;
-                }
-
-
-                
-                if(!time_available){
-                    error_notification.innerHTML = "No Available Slots On This Day"
-                }
-
-
-
-            }
-
-
-            function add_event(
-                day,
-                event_start,
-                event_end                
-            ){
-                let appointment = new TimeSlot(day, event_start, event_end)
-                if(slot_available(appointment)){
-
-                    $.ajax({
-                        url: "ajax.php",
-                        type: "POST",
-                        data: { 
-                            type: "register_appointment" ,
-                            appointment: appointment
-                        },
-                        async: false, 
-                        success: function(data) {
-                            cs("Sent...")
-                        }
-                    });
-
-                    
-                    return true
-                }
-                return false
-            }
-
-       
-
+            <label for="durationSelect">Duration:</label>
+            <select id="durationSelect" onchange="bookingSystem.updateSlots()">
+                <option value="30">30 minutes</option>
+                <option value="60">1 hour</option>
+            </select>
         
-        function slot_available(
-                new_event
-            ){
-                for (let event of appointments) {
-                    if (
-                        event.day.day === new_event.day.day
-                            && 
-                        timesOverlap(event.start, event.end, new_event.start, new_event.end)
-                    ) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            
+            <div id="error-notification"></div>
+        </div>
+        <div id="slotsContainer"></div>    
+    </div>
 
-            function timesOverlap(start1, end1, start2, end2) {
-                return !(end1 <= start2 || end2 <= start1);
-            }
+    <script src="src/Day.js"></script>
+    <script src="src/TimeSlot.js"></script>    
+    <script src="src/Utils.js"></script>
+    <script src="src/BookingSystem.js"></script>
 
-
-
-
-
-
-
-
-        </script>
-        
-    </body>
+    <script>
+        const cs = console.log
+        const bookingSystem = new BookingSystem();
+    </script>
+</body>
 </html>
