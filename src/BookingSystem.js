@@ -1,8 +1,41 @@
 class BookingSystem {
     constructor() {
-        this.appointments = [];
-        this.initDatepicker();
-        this.updateSlots();
+
+
+        this.do_not_book_next_n_hours = 3 * 60
+
+
+        const baseConfig = {start: "05:00", end: "23:00"}
+        this.config = baseConfig
+
+        this.loadConfig().then(config => {
+
+            this.appointments = [];
+            this.initDatepicker();
+            this.updateSlots();
+
+        }).catch(error => {
+            console.error('Error loading configuration:', error);
+        });
+
+    }
+
+    async loadConfig(){
+        const response = await fetch('ajax.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded', 
+            },
+            body: 'type=get_config' 
+        });
+        const result = await response.json()
+
+        if(result.status == "success"){
+            this.config = result.data.availability_config
+            this.events_config = result.data.events_config
+            this.default_padding = this.events_config["default"].padding
+        }
+
     }
 
     submitBooking() {
@@ -21,14 +54,13 @@ class BookingSystem {
         }
         let email = email_field.value;
 
-
         let day = document.getElementById('day').value;
         let duration = document.getElementById('duration').value;
         let start = Utils.timeToMinutes(document.getElementById('start').value);
         let end = Utils.timeToMinutes(document.getElementById('end').value);
         let appointmentType = document.getElementById('appointment-type').value;
 
-        if (!this.addEvent(new Day(day), start, end)) {
+        if (!this.addEvent(new Day(day), start, end, name, email, appointmentType)) {
             alert("Slot Unavailable");
         } else {
             this.closeOverlay();
@@ -47,20 +79,24 @@ class BookingSystem {
 
         const result = await response.json();
 
-        this.appointments = []
         if(result.status == 'success'){
-            this.appointments = result.data.map(item => new TimeSlot(new Day(item.day), item.start, item.end));
+            this.appointments = result.data.map(item => new TimeSlot(new Day(item.day), item.start, item.end, item.appointmentType));
+
+            cs(this.appointments)
         }
     }
 
-    async addEvent(day, start, end) {
-        const newSlot = new TimeSlot(day, start, end);
+    async addEvent(day, start, end, name, email, appointmentType) {
+        const newSlot = new TimeSlot(day, start, end, appointmentType);
         if (this.slotAvailable(newSlot)) {
             const formData = new URLSearchParams();
             formData.append("type", "register_appointment");
             formData.append("day", newSlot.day.day);
             formData.append("start", newSlot.start); 
             formData.append("end", newSlot.end);
+            formData.append("name", name);
+            formData.append("email", email);
+            formData.append("appointmentType", appointmentType);            
 
             const response = await fetch('ajax.php', {
                 method: 'POST',
@@ -72,17 +108,28 @@ class BookingSystem {
             const data = await response.json();
 
             this.appointments.push(newSlot)
-            cs('added')
             return true;
         }
         return false;
     }
 
     slotAvailable(newSlot) {
-        return !this.appointments.some(event =>
-            event.day.day === newSlot.day.day &&
-            this.timesOverlap(event.start, event.end, newSlot.start, newSlot.end)
-        );
+        return !this.appointments.some(event => {
+
+
+            let padding = this.default_padding 
+            if(this.events_config[event.appointmentType].padding){
+                padding = this.events_config[event.appointmentType].padding
+            }
+
+            let event_start_with_padding = event.start - padding.before;
+            let event_end_with_padding = parseInt(event.end) + padding.after;
+           
+            return (
+                event.day.day === newSlot.day.day &&
+                this.timesOverlap(event_start_with_padding, event_end_with_padding, newSlot.start, newSlot.end)
+            )
+        });
     }
 
     timesOverlap(start1, end1, start2, end2) {
@@ -91,7 +138,9 @@ class BookingSystem {
 
     initDatepicker() {
         $("#datePicker").datepicker({
-            dateFormat: "yy-mm-dd"
+            dateFormat: "yy-mm-dd",
+            minDate: new Date()
+
         }).datepicker("setDate", new Date());
     }
 
@@ -111,6 +160,7 @@ class BookingSystem {
 
         await this.fetchAppointments();
 
+        document.getElementById("error-notification").textContent = "";
 
         const slotsContainer = document.getElementById("slotsContainer");
         slotsContainer.innerHTML = ""; // Clear previous slots
@@ -118,13 +168,19 @@ class BookingSystem {
         const [start, end] = this.getDayAvailabilityRange(day);
         let currentTime = start;
 
+        // bug here for next days...
+        if(day.day == (new Day(new Date())).day){
+            let now = new Date();
+            let hours = now.getHours(); 
+            currentTime = hours * 60 + this.do_not_book_next_n_hours; 
+        }
+
         while (currentTime + duration <= end) {
-            if (this.slotAvailable(new TimeSlot(day, currentTime, currentTime + duration))) {
+            if (this.slotAvailable(new TimeSlot(day, currentTime, currentTime + duration, "default"))) {
 
                 const slotElement = document.createElement('div');
                 slotElement.className = 'slot';
                 slotElement.textContent = `${Utils.minutesToTime(currentTime)} - ${Utils.minutesToTime(currentTime + duration)}`;
-                // slotElement.onclick = () => this.openOverlay(day, duration, currentTime, currentTime + duration);
                 // Using an IIFE (Immediately Invoked Function Expression) to create a closure
                 slotElement.onclick = ((currentStartTime, currentEndTime) => {
                     return () => {
@@ -142,8 +198,23 @@ class BookingSystem {
     }
 
     getDayAvailabilityRange(day) {
-        const baseConfig = {start: "05:00", end: "23:00"}; // Default hours
-        const dayConfig = day.isWeekend ? {start: "09:00", end: "23:00"} : baseConfig;
+
+        let dayConfig = this.config.daily;
+
+        if(this.config.weekend && day.isWeekend){
+            dayConfig = this.config.weekend
+        }
+
+        if(this.config[day.dow]){
+            dayConfig = this.config[day.dow]
+        }
+
+        if(this.config.custom[day.day]){
+            dayConfig = this.config.custom[day.day]
+        }
+
+        // const baseConfig = {start: "05:00", end: "23:00"}; // Default hours
+        // const dayConfig = day.isWeekend ? {start: "09:00", end: "23:00"} : baseConfig;
         return [Utils.timeToMinutes(dayConfig.start), Utils.timeToMinutes(dayConfig.end)];
     }
 
@@ -159,4 +230,10 @@ class BookingSystem {
     closeOverlay() {
         document.getElementById('overlay').style.display = 'none';
     }
+
+    // delete custom day config after the date has passed
+    dispose_custom_config_from_past(){}
+
+    // delete bookings from the past
+    dispose_past_bookings(){}
 }
