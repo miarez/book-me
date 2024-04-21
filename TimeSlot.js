@@ -1,6 +1,6 @@
 
 
-class EventEntry {
+class TimeSlot {
 
     constructor(
         day,

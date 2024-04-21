@@ -46,6 +46,75 @@
                 user-select: none;
             }
 
+            /* Overlay covering the entire screen */
+            #overlay {
+                position: fixed;
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 2;
+                display: none;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Centered booking window */
+            #booking-window {
+
+                width: 50%;
+                max-width: 600px;
+                height: auto;
+                background-color: white;
+                padding: 20px;
+                padding-top: 30px;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                position: relative;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            /* Close button */
+            #close-btn {
+                margin-bottom: 10px;
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                border: none;
+                background: none;
+                font-size: 24px;
+                cursor: pointer;
+            }
+
+            /* Input styling */
+            input, select {
+                box-sizing: border-box;
+                width: 100%;
+                padding: 10px;
+                margin-top: 5px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+            }
+
+            /* Button styling */
+            button {
+                width: 100%;
+                padding: 10px;
+                background-color: #007BFF;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background-color 0.3s;
+            }
+
+            button:hover {
+                background-color: #0056b3;
+            }
+
         </style>
 
     </head>
@@ -53,19 +122,38 @@
 
     <body>
 
+        <div id="overlay">
+            <div id="booking-window">
+                <div id="close-btn" onclick="closeOverlay()">×</div>
+
+                <input type="text" id="name" placeholder="Name">
+                <input type="email" id="email" placeholder="Email">
+                <input type="date" id="day" placeholder="Day"disabled>
+                <input type="text" id="duration" placeholder="Duration (e.g., 2 hours)"disabled>
+                <input type="time" id="start" placeholder="Start Time" disabled>
+                <input type="time" id="end" placeholder="End Time"disabled>
+                <select id="appointment-type">
+                    <option value="interview">Interview</option>
+                    <option value="introduction">Introduction</option>
+                    <option value="office hours">Office Hours</option>
+                </select>
+                <button onclick="submitBooking()">Submit</button>
+            </div>
+        </div>
+
         <h1>Book a Meeting</h1>
         <div>
             <div>
                 <label for="datePicker">Select a Date:</label>
-                <input type="text" id="datePicker" readonly>
+                <input type="text" id="datePicker" readonly onchange="update_slots()">
             
                 <label for="durationSelect">Duration:</label>
-                <select id="durationSelect">
+                <select id="durationSelect" onchange="update_slots()">
                     <option value="30">30 minutes</option>
                     <option value="60">1 hour</option>
                 </select>
             
-                <button id="loadSlots">Load Available Slots</button>
+                <div id="error-notification"></div>
             </div>
             <div id="slotsContainer"></div>    
         </div>
@@ -73,10 +161,48 @@
 
         <script src="Utils.js"></script>
         <script src="Day.js"></script>
-        <script src="EventEntry.js"></script>
+        <script src="TimeSlot.js"></script>
 
         <script>
             const cs = console.log
+
+            function submitBooking() {
+
+                let bookingDetails = {
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    day: document.getElementById('day').value,
+                    duration: document.getElementById('duration').value,
+                    start: Utils.time_to_minutes(document.getElementById('start').value),
+                    end: Utils.time_to_minutes(document.getElementById('end').value),
+                    appointmentType: document.getElementById('appointment-type').value
+                };
+
+                if(!add_event(bookingDetails.day, bookingDetails.start, bookingDetails.end)){                            
+                    alert("Slot Unavailable")
+                }
+                closeOverlay();
+
+                update_slots()
+            }
+
+            function openOverLay(
+                day,
+                duration,
+                start,
+                end
+            ) {
+
+                document.getElementById("day").value = day.day
+                document.getElementById("duration").value = duration
+                document.getElementById("start").value = Utils.minutes_to_time(start)
+                document.getElementById("end").value = Utils.minutes_to_time(end)
+
+                document.getElementById('overlay').style.display = 'flex';
+            }
+            function closeOverlay() {
+                document.getElementById('overlay').style.display = 'none';
+            }
 
 
             
@@ -115,24 +241,21 @@
 
 
 
-
-
-
-            function get_events(){
-                let events = [];
+            function get_appointments(){
+                let appointments = [];
                     $.ajax({
                     url: "ajax.php",
                     type: "POST",
-                    data: { type: "get_events" },
+                    data: { type: "get_appointments" },
                     async: false,  // This makes the AJAX request synchronous
                     success: function(data) {
                         let parsed = JSON.parse(data)
                         parsed.forEach(item => {
-                            events.push(new EventEntry(new Day(item.day.day), item.start, item.end))
+                            appointments.push(new TimeSlot(new Day(item.day), item.start, item.end))
                         });
                     }
                 });
-                return events
+                return appointments
             }
 
 
@@ -168,18 +291,21 @@
                 }).
                 datepicker("setDate", new Date());
 
+                update_slots()
 
-                // Button click to load available slots based on selected date and duration
-                $("#loadSlots").click(function() {
-                    const dateText = $("#datePicker").val();
-                    const duration = parseInt($("#durationSelect").val(), 10);
-                    if (dateText) {
-                        displayAvailableSlots(new Day(dateText), duration);
-                    } else {
-                        alert("Please select a date first.");
-                    }
-                });
             });
+
+
+            function update_slots(){
+                cs("UPDAYING")
+                const dateText = $("#datePicker").val();
+                const duration = parseInt($("#durationSelect").val(), 10);
+                if (dateText) {
+                    displayAvailableSlots(new Day(dateText), duration);
+                } else {
+                    alert("Please select a date first.");
+                }
+            }
 
 
 
@@ -187,20 +313,28 @@
                 day,
                 duration
             ){
-                events = get_events();
 
+                appointments = get_appointments();
+
+
+                let error_notification = document.getElementById("error-notification")
+                error_notification.innerHTML = ""
+        
                 // reset every time it loads
                 let slotContainer = document.getElementById("slotsContainer")
                 slotContainer.innerHTML = ""
 
                 let [start_time, end_time] = get_day_availability_range(day);
 
+                let time_available = false
                 while(start_time + duration < end_time){
 
                     let start = start_time;
                     let end = start_time + duration;
 
-                    if(slot_available(new EventEntry(day, start, end))){
+                    if(slot_available(new TimeSlot(day, start, end))){
+
+                        time_available = true
 
                         const slotDiv = document.createElement('div');
                         slotDiv.className = 'slot';
@@ -210,16 +344,20 @@
 
 
                         slotDiv.onclick = function (){
-                            if(!add_event(day, start, end)){                            
-                                alert("Slot Unavailable")
-                            }
-                            displayAvailableSlots(day, duration)
+                            openOverLay(day, duration, start, end)
                         }
                         slotsContainer.appendChild(slotDiv);
                     }
 
                     start_time += duration;
                 }
+
+
+                
+                if(!time_available){
+                    error_notification.innerHTML = "No Available Slots On This Day"
+                }
+
 
 
             }
@@ -230,16 +368,23 @@
                 event_start,
                 event_end                
             ){
-                let event_entry = new EventEntry(day, event_start, event_end)
-                if(slot_available(event_entry)){
-                    events.push(event_entry);
-                    $.post( "ajax.php", {
-                        type: "update",
-                        events: events
-                    }, function( data ) {
-                        cs(data)
+                let appointment = new TimeSlot(day, event_start, event_end)
+                if(slot_available(appointment)){
+
+                    $.ajax({
+                        url: "ajax.php",
+                        type: "POST",
+                        data: { 
+                            type: "register_appointment" ,
+                            appointment: appointment
+                        },
+                        async: false, 
+                        success: function(data) {
+                            cs("Sent...")
+                        }
                     });
 
+                    
                     return true
                 }
                 return false
@@ -251,7 +396,7 @@
         function slot_available(
                 new_event
             ){
-                for (let event of events) {
+                for (let event of appointments) {
                     if (
                         event.day.day === new_event.day.day
                             && 
