@@ -39,7 +39,14 @@ try {
                 echo json_encode(["status" => "error", "message" => "Failed To Load Event Details"]);
                 exit;
             }
-            echo json_encode(["status" => "success", "data" => ["availability_config" => $decoded, "events_config" => $events_config]]);
+
+            $calendars = json_decode(file_get_contents("data/calendars.json"), true);
+            if(!is_array($events_config)){
+                echo json_encode(["status" => "error", "message" => "Failed To Load Calendars"]);
+                exit;
+            }
+
+            echo json_encode(["status" => "success", "data" => ["availability_config" => $decoded, "events_config" => $events_config, "calendars" => $calendars]]);
             exit;
         case "get_appointments":
             $response = file_get_contents($appointments_file);

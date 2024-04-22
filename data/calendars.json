@@ -1,0 +1,49 @@
+{
+    "fitness" : [
+        {
+            "day": "Monday",
+            "start": "17:30",
+            "end": "18:00",
+            "padding": { "before": 30, "after": 120 }
+        },
+        {
+            "day": "Tuesday",
+            "start": "17:00",
+            "end": "19:00",
+            "padding": { "before": 30, "after": 120 }
+        },        
+        {
+            "day": "Wednesday",
+            "start": "18:00",
+            "end": "20:30",
+            "padding": { "before": 30, "after": 120 }
+        },
+        {
+            "day": "Thursday",
+            "start": "17:30",
+            "end": "19:30",
+            "padding": { "before": 30, "after": 120 }
+        },
+        {
+            "day": "Friday",
+            "start": "12:00",
+            "end": "14:00",
+            "padding": { "before": 30, "after": 120 }
+        },
+        {
+            "day": "Saturday",
+            "start": "09:30",
+            "end": "12:00",
+            "padding": { "before": 30, "after": 120 }
+        },                
+        {
+            "day": "Sunday",
+            "start": "10:00",
+            "end": "11:00",
+            "padding": { "before": 30, "after": 120 }
+        }
+    ],
+    "work" : [
+    ]
+
+}

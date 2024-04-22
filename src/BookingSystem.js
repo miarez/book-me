@@ -1,9 +1,7 @@
 class BookingSystem {
     constructor() {
 
-
         this.do_not_book_next_n_hours = 3 * 60
-
 
         const baseConfig = {start: "05:00", end: "23:00"}
         this.config = baseConfig
@@ -34,7 +32,23 @@ class BookingSystem {
             this.config = result.data.availability_config
             this.events_config = result.data.events_config
             this.default_padding = this.events_config["default"].padding
+
+            this.calendars = result.data.calendars
+            this.prep_calendars()
+
+            cs(this.calendars)
         }
+    }
+
+    prep_calendars(){
+        Object.entries(this.calendars).forEach(entry => {
+            const [name, calendar] = entry;
+            Object.entries(calendar).forEach(calendar_entry => {            
+                const [key, value] = calendar_entry;
+                this.calendars[name][key].start = Utils.timeToMinutes(value.start) - value.padding.before
+                this.calendars[name][key].end   = Utils.timeToMinutes(value.end) + value.padding.after                
+            });
+        });
 
     }
 
@@ -82,7 +96,6 @@ class BookingSystem {
         if(result.status == 'success'){
             this.appointments = result.data.map(item => new TimeSlot(new Day(item.day), item.start, item.end, item.appointmentType));
 
-            cs(this.appointments)
         }
     }
 
@@ -114,26 +127,39 @@ class BookingSystem {
     }
 
     slotAvailable(newSlot) {
-        return !this.appointments.some(event => {
-
-
-            let padding = this.default_padding 
-            if(this.events_config[event.appointmentType].padding){
-                padding = this.events_config[event.appointmentType].padding
+        for (const event of this.appointments) {
+            let padding = this.default_padding;
+            if (this.events_config[event.appointmentType].padding) {
+                padding = this.events_config[event.appointmentType].padding;
             }
-
+    
             let event_start_with_padding = event.start - padding.before;
             let event_end_with_padding = parseInt(event.end) + padding.after;
-           
-            return (
-                event.day.day === newSlot.day.day &&
-                this.timesOverlap(event_start_with_padding, event_end_with_padding, newSlot.start, newSlot.end)
-            )
-        });
+    
+            if (event.day.day === newSlot.day.day &&
+                this.timesOverlap(event_start_with_padding, event_end_with_padding, newSlot.start, newSlot.end)) {
+                return false;
+            }
+        }
+    
+        for (const [name, calendar] of Object.entries(this.calendars)) {
+            for (const calendar_entry of calendar) {
+                if (calendar_entry.day == newSlot.day.dow) {
+                    if (this.timesOverlap(calendar_entry.start, calendar_entry.end, newSlot.start, newSlot.end)) {
+                        return false;
+                    }
+                }
+            }
+        }
+    
+        return true;
     }
+    
 
     timesOverlap(start1, end1, start2, end2) {
-        return !(end1 <= start2 || end2 <= start1);
+        
+        let ans = !(end1 <= start2 || end2 <= start1);
+        return ans
     }
 
     initDatepicker() {

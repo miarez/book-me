@@ -1,1 +1,20 @@
-[{"day":"2024-04-21","start":"330","end":"360","name":"Stas Pakhomov","email":"pakhomovs@hotmail.com","appointmentType":"interview","padding":{"before":30,"after":30}}]
+[
+  {
+    "day": "2024-04-21",
+    "start": "330",
+    "end": "360",
+    "name": "Stas Pakhomov",
+    "email": "pakhomovs@hotmail.com",
+    "appointmentType": "interview",
+    "padding": { "before": 30, "after": 30 }
+  },
+  {
+    "day": "2024-04-22",
+    "start": "630",
+    "end": "660",
+    "name": "Stas Pakhomov",
+    "email": "pakhomovs@hotmail.com",
+    "appointmentType": "interview",
+    "padding": { "before": 30, "after": 30 }
+  }
+]
